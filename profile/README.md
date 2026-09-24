@@ -1,21 +1,8 @@
 <div align="center">
 
-**Cloud sandboxes for AI agents — built on Alibaba Cloud Function Compute.**
+**Welcome to Easy Sandbox **
 
 </div>
-
----
-
-Serverless Sandbox is an open-source Python SDK and CLI for creating, managing, and interacting with secure cloud sandboxes designed for AI agents. Powered by Alibaba Cloud Function Compute, it gives every agent its own isolated Linux environment with filesystem, networking, and terminal access — spun up in seconds, torn down on demand. If you've used E2B, you'll feel right at home: our API is protocol-compatible, so migration is a one-line change.
-
-- **E2B Protocol Compatible** — Drop-in replacement for E2B's data-plane API. Migrate existing projects with minimal changes.
-- **AI-First Design** — Sandboxes ship with pre-installed AI CLI tools and an MCP Server, making them first-class citizens in agent workflows. Zero LLM dependency in the SDK itself.
-- **Zero Config** — Set `SANDBOX_API_KEY` and go. Sensible defaults mean you write three lines of Python, not thirty.
-- **`@sandbox` Decorator** — Modal-style declarative API. Decorate any function to run it remotely in a cloud sandbox.
-- **SandboxPool** — Pre-warmed sandbox pools for high-concurrency workloads. Acquire, execute, release — no cold starts.
-- **Alibaba Cloud Native** — Deep integrations with VPC, OSS, NAS, SLS, and custom domain binding for enterprise-grade deployments.
-- **Powerful CLI (`sbox`)** — Create, list, exec, kill, deploy templates, manage secrets — all from your terminal.
-- **Six-Layer Architecture** — From transport to AI integration, each layer has a single responsibility. Plug in at any level you need.
 
 ## 📦 Repositories
 
@@ -27,15 +14,41 @@ Serverless Sandbox is an open-source Python SDK and CLI for creating, managing, 
 ## 🚀 Quick Start
 
 ```bash
-pip install serverless-sandbox
+pip install easy-sandbox[all]
 ```
 
 ```python
-from serverless_sandbox import Sandbox
+from easy_sandbox import Sandbox
 
-async with await Sandbox.create(template="python-base") as sb:
-    result = await sb.run_code("print('Hello from the cloud!')")
-    print(result.text)  # Hello from the cloud!
+# 创建沙箱（推荐使用 async with 自动管理生命周期）
+async with await Sandbox.create(template="base", api_key="...") as sandbox:
+
+    # 执行命令
+    result = await sandbox.commands.run("echo hello")
+    print(result.stdout, result.exit_code)
+
+    # 文件操作
+    await sandbox.files.write("/app/data.txt", "内容")
+    content = await sandbox.files.read("/app/data.txt")
+
+    # 执行代码
+    code_result = await sandbox.run_code("print(1 + 1)")
+    print(code_result.text)
+
+    # 端口访问
+    url = sandbox.network.get_url(3000)
+```
+
+```python
+# @sandbox 装饰器 — 声明式远程执行
+from easy_sandbox.declarative import sandbox
+
+@sandbox(template="code-interpreter", packages=["numpy"])
+def compute(n: int) -> float:
+    import numpy as np
+    return float(np.random.random(n).mean())
+
+result = compute(1000)  # 自动在远程沙箱中执行
 ```
 
 > Need the CLI? `pip install "serverless-sandbox[cli]"` — then run `sbox create --template python-base`.
