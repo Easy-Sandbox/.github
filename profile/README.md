@@ -1,6 +1,6 @@
 <div align="center">
 
-**Welcome to Easy Sandbox **
+**Welcome to Easy Sandbox**
 
 </div>
 
