@@ -1,61 +1,86 @@
-<div align="center">
+# 欢迎使用 Easy Sandbox
 
-# Serverless Sandbox
+本目录包含 Easy Sandbox SDK 的完整使用示例，覆盖从基础操作到高级场景。
 
-**Cloud sandboxes for AI agents — built on Alibaba Cloud Function Compute.**
+## 准备
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg?logo=python&logoColor=white)](https://python.org)
-[![PyPI](https://img.shields.io/pypi/v/serverless-sandbox.svg?logo=pypi&logoColor=white)](https://pypi.org/project/serverless-sandbox/)
-
-[Documentation](https://github.com/serverless-sandbox/serverless-sandbox/tree/main/docs) · [Quick Start](#-quick-start) · [Templates](https://github.com/serverless-sandbox/awesome-templates) · [Contributing](#-contributing)
-
-</div>
-
----
-
-Serverless Sandbox is an open-source Python SDK and CLI for creating, managing, and interacting with secure cloud sandboxes designed for AI agents. Powered by Alibaba Cloud Function Compute, it gives every agent its own isolated Linux environment with filesystem, networking, and terminal access — spun up in seconds, torn down on demand. If you've used E2B, you'll feel right at home: our API is protocol-compatible, so migration is a one-line change.
-
-- **E2B Protocol Compatible** — Drop-in replacement for E2B's data-plane API. Migrate existing projects with minimal changes.
-- **AI-First Design** — Sandboxes ship with pre-installed AI CLI tools and an MCP Server, making them first-class citizens in agent workflows. Zero LLM dependency in the SDK itself.
-- **Zero Config** — Set `SANDBOX_API_KEY` and go. Sensible defaults mean you write three lines of Python, not thirty.
-- **`@sandbox` Decorator** — Modal-style declarative API. Decorate any function to run it remotely in a cloud sandbox.
-- **SandboxPool** — Pre-warmed sandbox pools for high-concurrency workloads. Acquire, execute, release — no cold starts.
-- **Alibaba Cloud Native** — Deep integrations with VPC, OSS, NAS, SLS, and custom domain binding for enterprise-grade deployments.
-- **Powerful CLI (`sbox`)** — Create, list, exec, kill, deploy templates, manage secrets — all from your terminal.
-- **Six-Layer Architecture** — From transport to AI integration, each layer has a single responsibility. Plug in at any level you need.
-
-## 📦 Repositories
-
-| Repository | Description |
-|:--|:--|
-| [`serverless-sandbox`](https://github.com/serverless-sandbox/serverless-sandbox) | Core SDK & CLI — sandbox lifecycle, file I/O, code execution, agent tools, and more. |
-| [`awesome-templates`](https://github.com/serverless-sandbox/awesome-templates) | Community-curated sandbox templates — Python, Node.js, data science, code interpreters. |
-
-## 🚀 Quick Start
+### 1. 安装 SDK
 
 ```bash
-pip install serverless-sandbox
+# 完整安装（推荐，包含 CLI + 声明式装饰器）
+pip install easy-sandbox[all]
+
+# 或按需安装
+pip install easy-sandbox[cli]          # 仅 CLI
+pip install easy-sandbox[declarative]  # 仅 @sandbox 装饰器
+
+# 从源码安装
+pip install -e .
+```
+
+### 2. 配置 API Key
+
+```bash
+# 方式一：环境变量
+export E2B_API_KEY="your-api-key"
+
+# 方式二：CLI 配置（持久化到 ~/.ebx/config.toml）
+ebx config set api_key your-api-key
+
+# 如需运行 Codex Agent 示例，还需配置：
+export OPENAI_API_KEY="your-openai-key-here"
+```
+
+## 快速开始
+
+运行任意示例：
+
+```bash
+# 基础示例
+python examples/quickstart/01_hello.py
+
+# 数据分析
+python examples/quickstart/04_data_analysis.py
+
+# @sandbox 装饰器
+python examples/quickstart/05_decorator_usage.py
+
+# E2B 兼容
+python examples/compat-demos/e2b_data_analysis.py
+```
+
+## 核心 API 速览
+
+```python
+from easy_sandbox import Sandbox
+
+# 创建沙箱（推荐使用 async with 自动管理生命周期）
+async with await Sandbox.create(template="base", api_key="...") as sandbox:
+
+    # 执行命令
+    result = await sandbox.commands.run("echo hello")
+    print(result.stdout, result.exit_code)
+
+    # 文件操作
+    await sandbox.files.write("/app/data.txt", "内容")
+    content = await sandbox.files.read("/app/data.txt")
+
+    # 执行代码
+    code_result = await sandbox.run_code("print(1 + 1)")
+    print(code_result.text)
+
+    # 端口访问
+    url = sandbox.network.get_url(3000)
 ```
 
 ```python
-from serverless_sandbox import Sandbox
+# @sandbox 装饰器 — 声明式远程执行
+from easy_sandbox.declarative import sandbox
 
-async with await Sandbox.create(template="python-base") as sb:
-    result = await sb.run_code("print('Hello from the cloud!')")
-    print(result.text)  # Hello from the cloud!
+@sandbox(template="code-interpreter", packages=["numpy"])
+def compute(n: int) -> float:
+    import numpy as np
+    return float(np.random.random(n).mean())
+
+result = compute(1000)  # 自动在远程沙箱中执行
 ```
-
-> Need the CLI? `pip install "serverless-sandbox[cli]"` — then run `sbox create --template python-base`.
-
-## 🤝 Contributing
-
-We welcome contributions of all kinds — bug reports, feature requests, documentation improvements, and pull requests. Check out our [Contributing Guide](https://github.com/serverless-sandbox/serverless-sandbox/blob/main/CONTRIBUTING.md) to get started.
-
----
-
-<div align="center">
-
-*Built with purpose for the AI agent era.*
-
-</div>
